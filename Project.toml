@@ -1,6 +1,6 @@
-name = "SatelliteDynamics"
+name = "SatelliteDynamicsLCS"
 uuid = "0e7c1a32-1b9f-5532-88a4-e668712d6a4c"
-authors = ["Duncan Eddy <duncan.eddy@gmail.com>"]
+authors = ["Duncan Eddy <duncan.eddy@gmail.com> - edited by Liam Smith <lsmith7661@gmail.com>"]
 version = "0.4.3"
 
 [deps]

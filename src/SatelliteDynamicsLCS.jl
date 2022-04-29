@@ -1,5 +1,5 @@
 __precompile__(true)
-module SatelliteDynamics
+module SatelliteDynamicsLCS
 
 # Usings
 using Dates
