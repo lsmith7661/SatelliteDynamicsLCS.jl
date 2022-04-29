@@ -1,6 +1,10 @@
-| Testing | Coverage | Documentation |
-| :-----: | :------: | :-----------: |
+|                                                                Testing                                                                |                                                                                    Coverage                                                                                    |                                                Documentation                                                 |
+| :-----------------------------------------------------------------------------------------------------------------------------------: | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------: | :----------------------------------------------------------------------------------------------------------: |
 | [![Build Status](https://travis-ci.org/sisl/SatelliteDynamics.jl.svg?branch=master)](https://travis-ci.org/sisl/SatelliteDynamics.jl) | [![Coverage Status](https://coveralls.io/repos/github/sisl/SatelliteDynamics.jl/badge.svg?branch=master)](https://coveralls.io/github/sisl/SatelliteDynamics.jl?branch=master) | [![](https://img.shields.io/badge/docs-latest-blue.svg)](https://sisl.github.io/SatelliteDynamics.jl/latest) |
+
+
+# SatelliteDynamicsLCS.jl
+This is package is a rip off of the original SatelliteDynamics package so I could play around with it :). If you stumble on to this, please go use the original here: https://github.com/sisl/SatelliteDynamics.jl
 
 # SatelliteDynamics.jl
 SatelliteDynamics package is meant to address the needs of the satellite operator, academic researcher, and public enthusiast communities.
