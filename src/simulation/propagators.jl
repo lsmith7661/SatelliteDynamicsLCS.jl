@@ -22,31 +22,35 @@ Arguments:
 - `sun::Bool`: Include thirdbody solar in force model (Default: `true`)
 - `relativity::Bool`: Include relativistic effects in force model (Default: `true`)
 
+Liam Additions
+- 'thrust_m_s_s::Float64' : Thrust magnitude to be applied in the negative velocity direction 
+
 Returns:
 - `dx::Array{<:Float64, 1}`: Satellite state derivative, velocity and accelerations [m; m/s]
 """
-function fderiv_earth_orbit(epc::Epoch, x::Array{<:Real} ;
-             mass::Real=1.0, area_drag::Real=1.0, coef_drag::Real=2.3, 
-             area_srp::Real=1.0, coef_srp::Real=1.8, 
-             n_grav::Integer=20, m_grav::Integer=20, 
-             drag::Bool=true, srp::Bool=true, moon::Bool=true, sun::Bool=true, 
-             relativity::Bool=true)
-    
+function fderiv_earth_orbit(epc::Epoch, x::Array{<:Real};
+    mass::Real=1.0, area_drag::Real=1.0, coef_drag::Real=2.3,
+    area_srp::Real=1.0, coef_srp::Real=1.8,
+    n_grav::Integer=20, m_grav::Integer=20,
+    drag::Bool=true, srp::Bool=true, moon::Bool=true, sun::Bool=true,
+    relativity::Bool=true,
+    thrust_m_s_s::Float64=0.0)
+
     # Extract position and velocity
     r = x[1:3]
     v = x[4:6]
 
     # Compute ECI to ECEF Transformation -> IAU2010 Theory
     PN = bias_precession_nutation(epc)
-    E  = earth_rotation(epc)
-    W  = polar_motion(epc)
-    R  = W * E * PN
+    E = earth_rotation(epc)
+    W = polar_motion(epc)
+    R = W * E * PN
 
     # Compute geolocation
-    geod = sECEFtoGEOD(R*r)
+    geod = sECEFtoGEOD(R * r)
 
     # Compute sun and moon position
-    r_sun  = sun_position(epc)
+    r_sun = sun_position(epc)
     r_moon = moon_position(epc)
 
     # Compute acceleration
@@ -58,13 +62,13 @@ function fderiv_earth_orbit(epc::Epoch, x::Array{<:Real} ;
     if drag
         # Use PN*x[1:3] to compute the satellite position in the true-of-date inertial frame
         rho = density_nrlmsise00(epc, geod)
-        a  += accel_drag(x, rho, mass, area_drag, coef_drag, Array{Real, 2}(PN))
+        a += accel_drag(x, rho, mass, area_drag, coef_drag, Array{Real,2}(PN))
     end
 
     # Solar Radiation Pressure
     if srp
         nu = eclipse_conical(x, r_sun)
-        a += nu*accel_srp(x, r_sun, mass, area_srp, coef_srp)
+        a += nu * accel_srp(x, r_sun, mass, area_srp, coef_srp)
     end
 
     # Thirdbody
@@ -80,6 +84,9 @@ function fderiv_earth_orbit(epc::Epoch, x::Array{<:Real} ;
     if relativity
         a += accel_relativity(x)
     end
+
+    # Thrust
+    a += thrust_m_s_s * -v / norm(v)
 
     return vcat(v, a)
 end
@@ -123,16 +130,19 @@ Parameters:
 - `sun::Bool`: Include thirdbody solar in force model (Default: `true`)
 - `relativity::Bool`: Include relativistic effects in force model (Default: `true`)
 
+Liam Additions
+- 'thrust_m_s_s::Float64' : Thrust magnitude to be applied in the negative velocity direction 
+
 """
 mutable struct EarthInertialState
     rk4::RK4
     dt::Real
     epc::Epoch
-    x::Array{Float64, 1}
-    phi::Union{Nothing, Array{Float64, 2}}
+    x::Array{Float64,1}
+    phi::Union{Nothing,Array{Float64,2}}
 end
 
-function EarthInertialState(epc::Epoch, x::Array{<:Real, 1}, phi::Union{Nothing, Array{Float64, 2}}=nothing; dt::Real=30.0, kwargs...)
+function EarthInertialState(epc::Epoch, x::Array{<:Real,1}, phi::Union{Nothing,Array{Float64,2}}=nothing; dt::Real=30.0, kwargs...)
     rk4 = RK4(fderiv_earth_orbit; kwargs...)
     return EarthInertialState(rk4, dt, epc, x, phi)
 end
@@ -174,7 +184,7 @@ Arguments:
 - `time::Union{Real, Epoch}` Time to propagate internal state too. Can be either
 a real number to advance the state by or the Epoch
 """
-function stepto!(state::EarthInertialState, time::Union{Real, Epoch}=0.0)
+function stepto!(state::EarthInertialState, time::Union{Real,Epoch}=0.0)
     if typeof(time) <: Real
         time = state.epc + time
     end
@@ -182,7 +192,7 @@ function stepto!(state::EarthInertialState, time::Union{Real, Epoch}=0.0)
     if time < state.epc
         @warn "Propagation time is before current state epoch. Will integrate dyanmics in reverse."
     end
-    
+
     # Propagate state
     while state.epc < time
         # Set propagation state size
@@ -211,7 +221,7 @@ Returns:
 - `x::Array{Float64, 2}` State vectors at each time step. Time is along second axis
 - `Phi::Array{Float64, 2}` Stacked array of state transition matrices
 """
-function sim!(state::EarthInertialState, time::Union{Real, Epoch}=0.0)
+function sim!(state::EarthInertialState, time::Union{Real,Epoch}=0.0)
     if typeof(time) <: Real
         time = state.epc + time
     end
@@ -224,19 +234,19 @@ function sim!(state::EarthInertialState, time::Union{Real, Epoch}=0.0)
     n = length(state.x)
 
     # Compute number of time steps in propagation
-    n_steps = ceil(Int, (time - state.epc)/state.dt) + 1
+    n_steps = ceil(Int, (time - state.epc) / state.dt) + 1
 
     # Initialize containers to store output
-    t   = zeros(Float64, n_steps)
+    t = zeros(Float64, n_steps)
     epc = Array{Epoch}(undef, n_steps)
-    x   = zeros(Float64, n, n_steps)
-    A   = zeros(Float64, n*n_steps, n)
+    x = zeros(Float64, n, n_steps)
+    A = zeros(Float64, n * n_steps, n)
 
     # Save initial state
     idx = 1
 
-    epc[idx]  = state.epc
-    t[idx]    = epc[idx] - epc[1]
+    epc[idx] = state.epc
+    t[idx] = epc[idx] - epc[1]
     x[:, idx] = state.x
 
     if state.phi != nothing
@@ -255,8 +265,8 @@ function sim!(state::EarthInertialState, time::Union{Real, Epoch}=0.0)
         step!(state, dt)
 
         # Save output
-        epc[idx]  = state.epc
-        t[idx]    = epc[idx] - epc[1]
+        epc[idx] = state.epc
+        t[idx] = epc[idx] - epc[1]
         x[:, idx] = state.x
         if state.phi != nothing
             A[(1+n*(idx-1)):(n*idx), :] = state.phi
