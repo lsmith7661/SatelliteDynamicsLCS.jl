@@ -24,6 +24,8 @@ Arguments:
 
 Liam Additions
 - 'thrust_m_s_s::Float64' : Thrust magnitude to be applied in the negative velocity direction 
+- 'throttle::Function' : Returns a value between 0 and 1 that throttles thrust
+    Function signature: throttle(state::Array{<:Real, 1})
 
 Returns:
 - `dx::Array{<:Float64, 1}`: Satellite state derivative, velocity and accelerations [m; m/s]
@@ -34,7 +36,8 @@ function fderiv_earth_orbit(epc::Epoch, x::Array{<:Real};
     n_grav::Integer=20, m_grav::Integer=20,
     drag::Bool=true, srp::Bool=true, moon::Bool=true, sun::Bool=true,
     relativity::Bool=true,
-    thrust_m_s_s::Float64=0.0)
+    thrust_m_s_s::Float64=0.0,
+    throttle::Function)
 
     # Extract position and velocity
     r = x[1:3]
@@ -86,7 +89,7 @@ function fderiv_earth_orbit(epc::Epoch, x::Array{<:Real};
     end
 
     # Thrust
-    a += thrust_m_s_s * -v / norm(v)
+    a += throttle(x) * thrust_m_s_s * -v / norm(v)
 
     return vcat(v, a)
 end
@@ -132,7 +135,8 @@ Parameters:
 
 Liam Additions
 - 'thrust_m_s_s::Float64' : Thrust magnitude to be applied in the negative velocity direction 
-
+- 'throttle::Function' : Returns a value between 0 and 1 that throttles thrust
+    Function signature: throttle(state::Array{<:Real, 1})
 """
 mutable struct EarthInertialState
     rk4::RK4
