@@ -61,7 +61,7 @@ function fderiv_earth_orbit(epc::Epoch, x::Array{<:Real};
     # Drag
     if drag
         # Use PN*x[1:3] to compute the satellite position in the true-of-date inertial frame
-        rho = density_nrlmsise00(epc, geod)
+        rho = density_harris_priester(epc, x)
         a += accel_drag(x, rho, mass, area_drag, coef_drag, Array{Real,2}(PN))
     end
 
